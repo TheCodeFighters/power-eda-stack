@@ -1,0 +1,6 @@
+keycloak.jks
+keycloak-certreq.csr
+keycloak-certfile.crt
+keycloak-keyfile.key
+keycloak-certfile.pem
+keycloak-keyfile.pem

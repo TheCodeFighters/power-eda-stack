@@ -1,0 +1,31 @@
+{
+  "name": "debezium-mysql-connector",
+  "config": {
+    "name": "debezium-mysql-connector",
+    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+    "tasks.max": "1",
+    "database.allowPublicKeyRetrieval": true,
+    "database.hostname": "mysql",
+    "database.port": "3306",
+    "database.user": "root",
+    "database.password": "root",
+    "database.server.id": "184054",
+    "topic.prefix": "power_eda_stack.debezium",
+    "database.include.list": "power_eda_stack",
+    "table.include.list": "^(power_eda_stack.)(event_store)$",
+    "transforms": "outbox",
+    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+    "transforms.outbox.route.topic.replacement": "${routedByValue}",
+    "transforms.outbox.route.by.field": "topic_name",
+    "transforms.outbox.table.field.event.key": "key_as_avro",
+    "transforms.outbox.table.field.event.payload": "payload_as_avro",
+    "schema.history.internal.kafka.bootstrap.servers": "kafka:29092",
+    "schema.history.internal.kafka.topic": "power_eda_stack.debezium.kafka-topic",
+    "key.converter": "io.debezium.converters.BinaryDataConverter",
+    "key.converter.delegate.converter.type": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.delegate.converter.type.schemas.enable": false,
+    "value.converter": "io.debezium.converters.BinaryDataConverter",
+    "value.converter.delegate.converter.type": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.delegate.converter.type.schemas.enable": false
+  }
+}

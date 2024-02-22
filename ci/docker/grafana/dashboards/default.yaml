@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+  - name: Grafana DashBoards
+    folder: Power Eda Stack Dashboard
+    type: file
+    options:
+      path:
+        /etc/grafana/provisioning/dashboards

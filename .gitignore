@@ -1,3 +1,20 @@
+# IDEs and editors
+/.idea
+*.iml
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/target
+/out
+
 # Compiled class file
 *.class
 
