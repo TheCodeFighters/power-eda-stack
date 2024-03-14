@@ -1,5 +1,123 @@
 version: '3.7'
 services:
+  krakend:
+    image: devopsfaith/krakend:latest
+    volumes:
+      - ./krakend/config.json:/etc/krakend/krakend.json
+    ports:
+      - "8085:8080"
+
+  apicurio-studio-ws:
+    image: 'apicurio/apicurio-studio-ws:${APICURIO_WS_VERSION}'
+    depends_on:
+      - mysql
+    environment:
+      JAVA_TOOL_OPTIONS: '-Djava.net.preferIPv4Stack=true'
+
+      QUARKUS_PROFILE: ${QUARKUS_PROFILE}
+      QUARKUS_HTTP_PORT: 8092
+      APICURIO_HUB_STORAGE_JDBC_TYPE: ${APICURIO_DB_TYPE}
+      APICURIO_DB_DRIVER_NAME: ${APICURIO_DB_DRIVER_NAME}
+      APICURIO_DB_CONNECTION_URL: ${APICURIO_DB_CONNECTION_URL}
+      APICURIO_DB_USER_NAME: ${APICURIO_DB_USER_NAME}
+      APICURIO_DB_PASSWORD: ${APICURIO_DB_PASSWORD}
+      APICURIO_DB_INITIALIZE: ${WS_APICURIO_DB_INITIALIZE}
+      APICURIO_SHARE_FOR_EVERYONE: ${APICURIO_SHARE_FOR_EVERYONE}
+    networks:
+      - power_eda_stack-network
+
+
+  apicurio-studio-api:
+    image: 'apicurio/apicurio-studio-api:${APICURIO_API_VERSION}'
+    restart: on-failure
+    depends_on:
+      - mysql
+      - apicurio-studio-ws
+      - keycloak
+    environment:
+      JAVA_TOOL_OPTIONS: '-Djava.net.preferIPv4Stack=true'
+
+      QUARKUS_PROFILE: ${QUARKUS_PROFILE}
+      QUARKUS_HTTP_PORT: 8091
+      APICURIO_KC_AUTH_URL: ${KC_AUTH_URL}
+      APICURIO_KC_REALM: ${APICURIO_KC_REALM}
+      APICURIO_KC_CLIENT_ID: ${API_APICURIO_KC_CLIENT_ID}
+
+      APICURIO_HUB_STORAGE_JDBC_TYPE: ${APICURIO_DB_TYPE}
+      APICURIO_DB_DRIVER_NAME: ${APICURIO_DB_DRIVER_NAME}
+      APICURIO_DB_CONNECTION_URL: ${APICURIO_DB_CONNECTION_URL}
+      APICURIO_DB_USER_NAME: ${APICURIO_DB_USER_NAME}
+      APICURIO_DB_PASSWORD: ${APICURIO_DB_PASSWORD}
+      APICURIO_DB_INITIALIZE: ${API_APICURIO_DB_INITIALIZE}
+
+      APICURIO_GITHUB_API_URL: ${APICURIO_GITHUB_API_URL}
+      APICURIO_GITLAB_API_URL: ${APICURIO_GITLAB_API_URL}
+      APICURIO_BITBUCKET_API_URL: ${APICURIO_BITBUCKET_API_URL}
+      APICURIO_SHARE_FOR_EVERYONE: ${APICURIO_SHARE_FOR_EVERYONE}
+    networks:
+      - power_eda_stack-network
+
+
+  apicurio-studio-ui:
+    image: 'apicurio/apicurio-studio-ui:${APICURIO_UI_VERSION}'
+    restart: on-failure
+    depends_on:
+      - apicurio-studio-api
+      - apicurio-studio-ws
+      - keycloak
+    environment:
+      JAVA_TOOL_OPTIONS: '-Djava.net.preferIPv4Stack=true'
+      QUARKUS_HTTP_PORT: 8093
+      QUARKUS_PROFILE: ${QUARKUS_PROFILE}
+
+      APICURIO_KC_CLIENT_ID: ${APICURIO_UI_KC_CLIENT_ID}
+      APICURIO_KC_AUTH_URL: ${KC_AUTH_URL}
+      APICURIO_KC_REALM: ${APICURIO_KC_REALM}
+      APICURIO_UI_HUB_API_URL: ${APICURIO_UI_HUB_API_URL}
+      APICURIO_UI_EDITING_URL: ${APICURIO_UI_EDITING_URL}
+      APICURIO_UI_FEATURE_MICROCKS: ${APICURIO_UI_FEATURE_MICROCKS}
+      APICURIO_UI_FEATURE_SHARE_WITH_EVERYONE: ${APICURIO_UI_FEATURE_SHARE_WITH_EVERYONE}
+      APICURIO_UI_LOGOUT_REDIRECT_URI: /
+      APICURIO_UI_VALIDATION_CHANNELNAME_REGEXP: ${APICURIO_UI_VALIDATION_CHANNELNAME_REGEXP}
+      APICURIO_OIDC_REDIRECT_HTTPS: "false"
+    networks:
+      - power_eda_stack-network
+
+  mongo:
+    image: mongo:3.4.23
+    container_name: microcks-mongo
+    volumes:
+      - power_eda_stack-dev-profile-mongodb:/data/db
+    networks:
+      - power_eda_stack-network
+
+  postman:
+    image: microcks/microcks-postman-runtime:latest
+    container_name: microcks-postman-runtime
+    networks:
+      - power_eda_stack-network
+
+  microcks:
+    depends_on:
+      - mongo
+      - postman
+      - keycloak
+    image: microcks/microcks:latest
+    container_name: microcks
+#    volumes:
+#      - ./config:/deployments/config
+    ports:
+      - "8900:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${MR_SPRING_PROFILES_ACTIVE}
+      SPRING_DATA_MONGODB_URI: ${MR_SPRING_DATA_MONGODB_URI}
+      SPRING_DATA_MONGODB_DATABASE: ${MR_SPRING_DATA_MONGODB_DATABASE}
+      POSTMAN_RUNNER_URL: ${MR_POSTMAN_RUNNER_URL}
+      TEST_CALLBACK_URL: ${MR_TEST_CALLBACK_URL}
+      KEYCLOAK_URL: ${KC_AUTH_URL}
+    networks:
+      - power_eda_stack-network
+
   kafka:
     image: confluentinc/cp-kafka:latest
     hostname: kafka
@@ -155,7 +273,7 @@ services:
       - power_eda_stack-network
     restart: always
 
-  ## enable when needed
+#  ## enable when needed
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -209,6 +327,8 @@ services:
         condition: service_healthy
     volumes:
       - ./keycloak/power_eda_stack-realm.json:/opt/keycloak/data/import/power_eda_stack-realm.json
+      - ./keycloak/apicurio-realm.json:/opt/keycloak/data/import/apicurio-realm.json
+      - ./keycloak/apicurio-realm.json:/opt/keycloak/data/import/microcks-realm.json
       - ./keycloak/pem:/opt/keycloak/pem
     networks:
       - power_eda_stack-network
@@ -227,6 +347,8 @@ networks:
   power_eda_stack-network:
 
 volumes:
+  power_eda_stack-dev-profile-apicurio-data:
+  power_eda_stack-dev-profile-mongodb:
   power_eda_stack-dev-profile-kafka:
   power_eda_stack-dev-profile-schema-registry:
   power_eda_stack-dev-profile-mysql:

@@ -1,0 +1,36 @@
+{
+  "version": 3,
+  "endpoints": [
+    {
+      "endpoint": "/users/{user}",
+      "method": "GET",
+      "timeout": "800ms",
+      "backend": [
+        {
+          "extra_config": {
+            "qos/http-cache": {
+            },
+            "modifier/martian": {
+              "header.Modifier": {
+                "scope": ["response"],
+                "name": "Cache-Control",
+                "value": "max-age=30, public"
+              }
+            }
+          },
+          "url_pattern": "/users/{user}",
+          "host": [
+            "https://jsonplaceholder.typicode.com"
+          ]
+        },
+        {
+          "url_pattern": "/posts/{user}",
+          "host": [
+            "https://jsonplaceholder.typicode.com"
+          ]
+        }
+      ]
+    }
+  ]
+}
+
